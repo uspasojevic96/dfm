@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -15,6 +16,28 @@ var databasePath = string(os.PathSeparator) + ".dfm" + string(os.PathSeparator) 
 type Database struct {
 	Packages   map[string]*pkg.Package `json:"packages"`
 	LastUpdate int64                   `json:"lastUpdate"`
+}
+
+func init() {
+	home, err := homedir.Dir()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	path := home + string(os.PathSeparator) + ".dfm"
+
+	fileinfo, err := os.Stat(path)
+
+	_ = fileinfo
+
+	if err != nil {
+		err := os.Mkdir(path, 0644)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func (d *Database) AddPackage(p *pkg.Package) {
