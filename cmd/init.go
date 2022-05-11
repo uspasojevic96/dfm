@@ -5,60 +5,79 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/uspasojevic96/dfm/database"
+	"github.com/uspasojevic96/dfm/pkg"
+	"github.com/uspasojevic96/dfm/util"
 )
 
-// initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: runInit,
+	Short: "Initializes dotfile manager repository",
+	Long:  `Initializes dotfile manager repository with specific dotfiles github repository.`,
+	Run:   runInit,
 }
 
 func runInit(cmd *cobra.Command, args []string) {
-	home, err := homedir.Dir()
+	path := util.GetDFMRepoPath()
 
-	if err != nil {
-		fmt.Println(err)
-		return
+	stat, _ := os.Stat(path)
+
+	if stat != nil {
+		log.Fatal("Repository already exists")
 	}
 
-	path := home + string(os.PathSeparator) + ".dfm" + string(os.PathSeparator) + "repo"
+	url, err := url.Parse(args[0])
 
-	r, err := git.PlainClone(path, false, &git.CloneOptions{
-		URL:               args[0],
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = git.PlainClone(path, false, &git.CloneOptions{
+		URL:               url.String(),
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 	})
-	_ = r
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	db := database.New()
+	err = db.LoadDatabase()
+
+	pkgs, err := pkg.LoadPackages(path)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err != nil {
+		e := err
+		err = db.SaveDatabase()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Fatal(e)
+	}
+
+	for _, pkg := range pkgs {
+		db.AddPackage(pkg)
+	}
+
+	err = db.SaveDatabase()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -7,29 +7,19 @@ import (
 	"log"
 	"os"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/uspasojevic96/dfm/pkg"
+	"github.com/uspasojevic96/dfm/util"
 )
-
-var databasePath = string(os.PathSeparator) + ".dfm" + string(os.PathSeparator) + "database.json"
 
 type Database struct {
 	Packages   map[string]*pkg.Package `json:"packages"`
 	LastUpdate int64                   `json:"lastUpdate"`
 }
 
-func init() {
-	home, err := homedir.Dir()
+func New() *Database {
+	path := util.GetDFMPath()
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	path := home + string(os.PathSeparator) + ".dfm"
-
-	fileinfo, err := os.Stat(path)
-
-	_ = fileinfo
+	_, err := os.Stat(path)
 
 	if err != nil {
 		err := os.Mkdir(path, 0644)
@@ -37,6 +27,11 @@ func init() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	return &Database{
+		Packages:   make(map[string]*pkg.Package),
+		LastUpdate: 0,
 	}
 }
 
@@ -59,13 +54,8 @@ func (d *Database) RemovePackage(name string) error {
 }
 
 func (d *Database) LoadDatabase() error {
-	home, err := homedir.Dir()
-
-	if err != nil {
-		return err
-	}
-
-	input, err := ioutil.ReadFile(home + databasePath)
+	path := util.GetDFMDatabasePath()
+	input, err := ioutil.ReadFile(path)
 
 	if err != nil {
 		return err
@@ -79,11 +69,7 @@ func (d *Database) LoadDatabase() error {
 }
 
 func (d *Database) SaveDatabase() error {
-	home, err := homedir.Dir()
-
-	if err != nil {
-		return err
-	}
+	path := util.GetDFMDatabasePath()
 
 	output, err := json.Marshal(d)
 
@@ -91,7 +77,7 @@ func (d *Database) SaveDatabase() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(home+databasePath, output, 0644); err != nil {
+	if err := ioutil.WriteFile(path, output, 0644); err != nil {
 		return err
 	}
 
