@@ -5,8 +5,8 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"log"
-	"net/url"
 	"os"
 
 	"github.com/go-git/go-git/v5"
@@ -32,15 +32,23 @@ func runInit(cmd *cobra.Command, args []string) {
 		log.Fatal("Repository already exists")
 	}
 
-	url, err := url.Parse(args[0])
+	// url, err := url.Parse(args[0])
+	//
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	configOptions, err := util.GetGitConfigOptions(args[0])
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	_, err = git.PlainClone(path, false, &git.CloneOptions{
-		URL:               url.String(),
+		URL: configOptions.URL,
+
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+		Auth:              configOptions.Auth,
 	})
 
 	if err != nil {
@@ -69,6 +77,7 @@ func runInit(cmd *cobra.Command, args []string) {
 
 	for _, pkg := range pkgs {
 		db.AddPackage(pkg)
+		fmt.Print(pkg.Name)
 	}
 
 	err = db.SaveDatabase()

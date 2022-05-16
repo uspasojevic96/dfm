@@ -1,7 +1,9 @@
 package pkg
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -60,5 +62,33 @@ func (p *Package) Info() string {
 }
 
 func LoadPackages(path string) ([]*Package, error) {
-	return nil, errors.New("not implemented")
+	files, err := os.ReadDir(path)
+
+	var packages []*Package
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			pkgPath := path + string(os.PathSeparator) + file.Name() + string(os.PathSeparator) + "metadata.json"
+
+			if util.FileExists(pkgPath) {
+				var pkg Package
+				content, err := ioutil.ReadFile(pkgPath)
+				if err != nil {
+					return nil, err
+				}
+
+				err = json.Unmarshal(content, &pkg)
+				if err != nil {
+					return nil, err
+				}
+
+				packages = append(packages, &pkg)
+			}
+		}
+	}
+
+	return packages, nil
 }

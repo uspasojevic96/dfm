@@ -12,6 +12,7 @@ import (
 )
 
 type Database struct {
+	URL        string                  `json:"url"`
 	Packages   map[string]*pkg.Package `json:"packages"`
 	LastUpdate int64                   `json:"lastUpdate"`
 }
@@ -30,6 +31,7 @@ func New() *Database {
 	}
 
 	return &Database{
+		URL:        "",
 		Packages:   make(map[string]*pkg.Package),
 		LastUpdate: 0,
 	}
